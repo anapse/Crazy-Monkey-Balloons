@@ -62,10 +62,20 @@ export default function App() {
     setPlayerName(StorageService.getPlayerName());
 
     const checkRoute = () => {
-      const path = window.location.pathname;
-      const hash = window.location.hash;
-      if (path === '/admin' || path.endsWith('/admin') || hash === '#admin') {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      const search = window.location.search.toLowerCase();
+      if (
+        path === '/admin' ||
+        path.endsWith('/admin') ||
+        path.endsWith('/admin/') ||
+        hash === '#admin' ||
+        hash === '#/admin' ||
+        search.includes('admin')
+      ) {
         setView('admin');
+      } else {
+        setView((prev) => (prev === 'admin' ? 'menu' : prev));
       }
     };
 
@@ -235,12 +245,25 @@ export default function App() {
 
   const levelConfig = getLevelConfig(currentLevelNumber);
 
-  // Admin Dashboard route view
+  // Admin Dashboard route view (Acceso exclusivo por ruta URL)
   if (view === 'admin') {
     return (
       <AdminDashboard
         onBackToGame={() => {
-          window.location.hash = '';
+          if (window.location.hash) {
+            window.location.hash = '';
+          }
+          if (window.location.pathname.toLowerCase().endsWith('/admin') || window.location.pathname.toLowerCase().endsWith('/admin/')) {
+            const basePath = window.location.pathname.replace(/\/admin\/?$/i, '') || '/';
+            window.history.pushState(null, '', basePath);
+          }
+          if (window.location.search.toLowerCase().includes('admin')) {
+            const searchParams = new URLSearchParams(window.location.search);
+            searchParams.delete('admin');
+            searchParams.delete('view');
+            const newSearch = searchParams.toString() ? `?${searchParams.toString()}` : '';
+            window.history.pushState(null, '', window.location.pathname + newSearch);
+          }
           setView('menu');
         }}
       />

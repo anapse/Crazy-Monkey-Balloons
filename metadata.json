@@ -1,0 +1,6 @@
+{
+  "name": "Crazy Monkey Balloons",
+  "description": "🐒🎈 Un divertido juego de cañón y física vertical. Dispara, rebota y revienta todos los globos que sostienen al mono travieso.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -160,7 +160,7 @@ export class StorageService {
     localStorage.setItem(STORAGE_KEYS.LOCAL_RECORD, JSON.stringify(updated));
   }
 
-  // Top 50 Leaderboard (Only real players)
+  // Top 50 Leaderboard (Only real players, shows all match records)
   static getTop50(): ScoreEntry[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.TOP_SCORES);
@@ -174,30 +174,14 @@ export class StorageService {
     }
   }
 
-  // Fetch online Top 50 from Firebase Firestore (Only real players)
+  // Fetch online Top 50 directly from Firebase Firestore (All records of each name)
   static async fetchOnlineTop50(): Promise<ScoreEntry[]> {
     try {
       const onlineScores = await FirebaseService.getTopScores(50);
       const filteredOnline = onlineScores.filter((s) => isRealPlayer(s.playerName));
+      filteredOnline.sort((a, b) => b.score - a.score);
 
-      const localScores = this.getTop50();
-      const mergedMap = new Map<string, ScoreEntry>();
-
-      localScores.forEach((s) => {
-        if (isRealPlayer(s.playerName)) {
-          mergedMap.set(`${s.playerName}_${s.score}`, s);
-        }
-      });
-
-      filteredOnline.forEach((s) => {
-        if (isRealPlayer(s.playerName)) {
-          mergedMap.set(`${s.playerName}_${s.score}`, s);
-        }
-      });
-
-      const merged = Array.from(mergedMap.values());
-      merged.sort((a, b) => b.score - a.score);
-      const top50 = merged.slice(0, 50);
+      const top50 = filteredOnline.slice(0, 50);
       localStorage.setItem(STORAGE_KEYS.TOP_SCORES, JSON.stringify(top50));
       return top50;
     } catch (e) {
@@ -209,6 +193,7 @@ export class StorageService {
   static saveScore(playerName: string, score: number, levelReached: number, balloonsPopped: number): ScoreEntry[] {
     const cleanName = isRealPlayer(playerName) ? playerName.trim() : 'Jugador';
     const scores = this.getTop50();
+
     const newEntry: ScoreEntry = {
       id: 'score_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       playerName: cleanName,
@@ -229,10 +214,10 @@ export class StorageService {
 
     // Persist score in Firebase Firestore
     FirebaseService.saveScore({
-      playerName: newEntry.playerName,
-      score: newEntry.score,
-      level: newEntry.levelReached,
-      balloonsPopped: newEntry.balloonsPopped,
+      playerName: cleanName,
+      score,
+      level: levelReached,
+      balloonsPopped,
     }).catch(() => {});
 
     return top50;

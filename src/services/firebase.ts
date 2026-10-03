@@ -42,7 +42,7 @@ export const db = firestoreInstance;
 
 export class FirebaseService {
   /**
-   * Save a score to the global Firestore 'scores' collection
+   * Save a score record to the global Firestore 'scores' collection
    */
   static async saveScore(entry: {
     playerName: string;
@@ -51,8 +51,22 @@ export class FirebaseService {
     balloonsPopped: number;
   }): Promise<string | null> {
     try {
+      const pName = (entry.playerName || 'Jugador').trim();
+      if (!pName) return null;
+
+      const mockNames = new Set([
+        'BananoMaster',
+        'BalloonSlayer',
+        'CrazyCannon',
+        'MonoPro',
+        'ReboteRey',
+        'Chimpazoom',
+        'GigaBalloons',
+      ]);
+      if (mockNames.has(pName)) return null;
+
       const docRef = await addDoc(collection(db, 'scores'), {
-        playerName: entry.playerName || 'Jugador Anónimo',
+        playerName: pName,
         score: entry.score,
         level: entry.level,
         balloonsPopped: entry.balloonsPopped,
@@ -66,7 +80,7 @@ export class FirebaseService {
   }
 
   /**
-   * Fetch the top 50 scores from Firestore
+   * Fetch all top score records from Firestore
    */
   static async getTopScores(max: number = 50): Promise<ScoreEntry[]> {
     try {
@@ -79,9 +93,10 @@ export class FirebaseService {
         'Chimpazoom',
         'GigaBalloons',
       ]);
-      const q = query(collection(db, 'scores'), orderBy('score', 'desc'), limit(max * 2));
+      const q = query(collection(db, 'scores'), orderBy('score', 'desc'), limit(max));
       const querySnapshot = await getDocs(q);
       const scores: ScoreEntry[] = [];
+
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
         const pName = (data.playerName || '').trim();
@@ -97,6 +112,8 @@ export class FirebaseService {
           });
         }
       });
+
+      scores.sort((a, b) => b.score - a.score);
       return scores.slice(0, max);
     } catch (e) {
       console.warn('Could not fetch scores from Firestore, falling back to local:', e);

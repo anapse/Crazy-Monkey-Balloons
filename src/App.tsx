@@ -23,6 +23,11 @@ export default function App() {
   const [view, setView] = useState<'menu' | 'playing' | 'admin'>('menu');
   const [currentLevelNumber, setCurrentLevelNumber] = useState<number>(1);
   const [playerName, setPlayerName] = useState<string>('');
+  const playerNameRef = useRef<string>('');
+
+  useEffect(() => {
+    playerNameRef.current = playerName;
+  }, [playerName]);
 
   // Game Stats
   const [score, setScore] = useState<number>(0);
@@ -94,20 +99,17 @@ export default function App() {
 
   const handlePlayClick = () => {
     soundManager.playClick();
-    if (!playerName.trim()) {
-      setShowPlayerNameModal(true);
-    } else {
-      startNewGame();
-    }
+    setShowPlayerNameModal(true);
   };
 
   const handleConfirmName = (name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
     setPlayerName(trimmed);
+    playerNameRef.current = trimmed;
     StorageService.setPlayerName(trimmed);
     setShowPlayerNameModal(false);
-    startNewGame();
+    startNewGame(trimmed);
   };
 
   const handleCancelPlayerName = () => {
@@ -117,10 +119,13 @@ export default function App() {
   const handleGameOverPlayAgain = () => {
     soundManager.playClick();
     setShowGameOver(false);
-    startNewGame();
+    startNewGame(playerNameRef.current || playerName);
   };
 
-  const startNewGame = () => {
+  const startNewGame = (nameToUse?: string) => {
+    const name = nameToUse || playerNameRef.current || playerName || StorageService.getPlayerName() || 'Jugador';
+    setPlayerName(name);
+    playerNameRef.current = name;
     setCurrentLevelNumber(1);
     setScore(0);
     setLives(3);
@@ -157,10 +162,11 @@ export default function App() {
     setScore(finalScore);
     setShowVictory(true);
 
+    const activeName = playerNameRef.current || playerName || 'Jugador';
     const duration = Math.round((Date.now() - levelStartTimeRef.current) / 1000);
-    StorageService.saveScore(playerName, finalScore, currentLevelNumber, balloonsPopped);
+    StorageService.saveScore(activeName, finalScore, currentLevelNumber, balloonsPopped);
     StorageService.logMatch({
-      playerName,
+      playerName: activeName,
       level: currentLevelNumber,
       score: finalScore,
       result: 'won',
@@ -175,10 +181,11 @@ export default function App() {
     setScore(finalScore);
     setShowGameOver(true);
 
+    const activeName = playerNameRef.current || playerName || 'Jugador';
     const duration = Math.round((Date.now() - levelStartTimeRef.current) / 1000);
-    StorageService.saveScore(playerName, finalScore, levelReached, remainingBalloons);
+    StorageService.saveScore(activeName, finalScore, levelReached, remainingBalloons);
     StorageService.logMatch({
-      playerName,
+      playerName: activeName,
       level: levelReached,
       score: finalScore,
       result: 'lost',
@@ -358,6 +365,7 @@ export default function App() {
         <VictoryModal
           levelNumber={currentLevelNumber}
           score={score}
+          lives={lives}
           onNextLevel={handleNextLevel}
           onMainMenu={handleMainMenu}
         />

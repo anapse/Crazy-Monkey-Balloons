@@ -467,6 +467,14 @@ export class GameEngine {
         this.groupY = 660;
         this.monkeyState = 'crying';
         soundManager.playWin();
+
+        // Award +1 life gift upon completing the level (max 5 lives)
+        if (this.lives < 5) {
+          this.lives = Math.min(5, this.lives + 1);
+          this.callbacks.onLivesUpdate(this.lives);
+          this.addFloatingText('+1 ❤️ VIDA EXTRA', this.cannonX, this.cannonY - 45, '#ec4899');
+        }
+
         setTimeout(() => {
           this.callbacks.onLevelWin(this.score, this.totalBalloonsPoppedGame);
         }, 1200);

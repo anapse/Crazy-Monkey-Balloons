@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Play } from 'lucide-react';
 
 interface PlayerNameModalProps {
@@ -19,6 +19,10 @@ export const PlayerNameModal: React.FC<PlayerNameModalProps> = ({
   confirmButtonText = 'JUGAR',
 }) => {
   const [name, setName] = useState(initialName || '');
+
+  useEffect(() => {
+    setName(initialName || '');
+  }, [initialName]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

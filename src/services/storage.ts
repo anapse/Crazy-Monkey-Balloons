@@ -1,4 +1,5 @@
 import { ScoreEntry, MatchRecord, AnalyticsSummary } from '../types/game';
+import { FirebaseService } from './firebase';
 
 const STORAGE_KEYS = {
   PLAYER_NAME: 'cmb_player_name',
@@ -56,6 +57,9 @@ export class StorageService {
     analytics.totalVisits = visits.totalVisits;
     analytics.dailyVisits = visits.dailyVisits;
     localStorage.setItem(STORAGE_KEYS.ANALYTICS, JSON.stringify(analytics));
+
+    // Cloud sync with Firebase
+    FirebaseService.trackVisit().catch(() => {});
   }
 
   static getVisitsData(): { totalVisits: number; dailyVisits: { [date: string]: number } } {
@@ -120,6 +124,30 @@ export class StorageService {
     }
   }
 
+  // Fetch online Top 50 from Firebase Firestore
+  static async fetchOnlineTop50(): Promise<ScoreEntry[]> {
+    try {
+      const onlineScores = await FirebaseService.getTopScores(50);
+      if (onlineScores && onlineScores.length > 0) {
+        // Merge with local scores
+        const localScores = this.getTop50();
+        const mergedMap = new Map<string, ScoreEntry>();
+        
+        localScores.forEach((s) => mergedMap.set(`${s.playerName}_${s.score}`, s));
+        onlineScores.forEach((s) => mergedMap.set(`${s.playerName}_${s.score}`, s));
+        
+        const merged = Array.from(mergedMap.values());
+        merged.sort((a, b) => b.score - a.score);
+        const top50 = merged.slice(0, 50);
+        localStorage.setItem(STORAGE_KEYS.TOP_SCORES, JSON.stringify(top50));
+        return top50;
+      }
+    } catch (e) {
+      console.warn('Firebase getTopScores error, returning local cache:', e);
+    }
+    return this.getTop50();
+  }
+
   static saveScore(playerName: string, score: number, levelReached: number, balloonsPopped: number): ScoreEntry[] {
     const scores = this.getTop50();
     const newEntry: ScoreEntry = {
@@ -138,6 +166,14 @@ export class StorageService {
 
     localStorage.setItem(STORAGE_KEYS.TOP_SCORES, JSON.stringify(top50));
     this.updateLocalRecord(score, levelReached, balloonsPopped);
+
+    // Persist score in Firebase Firestore
+    FirebaseService.saveScore({
+      playerName: newEntry.playerName,
+      score: newEntry.score,
+      level: newEntry.levelReached,
+      balloonsPopped: newEntry.balloonsPopped,
+    }).catch(() => {});
 
     return top50;
   }
@@ -161,6 +197,13 @@ export class StorageService {
 
       // Update analytics
       this.updateAnalyticsOnMatch(record);
+
+      // Cloud sync analytics with Firebase
+      FirebaseService.trackGameMatch({
+        score: match.score,
+        balloonsDestroyed: match.balloonsDestroyed,
+        result: match.result,
+      }).catch(() => {});
     } catch (e) {
       console.error('Failed to log match', e);
     }

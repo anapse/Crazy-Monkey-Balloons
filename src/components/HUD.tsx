@@ -1,6 +1,6 @@
 import React from 'react';
 import { PowerUpInventory, PowerUpType } from '../types/game';
-import { Settings, Volume2, VolumeX } from 'lucide-react';
+import { Pause, Volume2, VolumeX } from 'lucide-react';
 import { assetManager } from '../services/assetManager';
 
 interface HUDProps {
@@ -77,22 +77,22 @@ export const HUD: React.FC<HUDProps> = ({
           <span className="font-black text-amber-300 text-xs">{score}</span>
         </div>
 
-        {/* Sound & Settings Buttons */}
-        <div className="flex items-center gap-1">
+        {/* Sound & Compact Pause Buttons */}
+        <div className="flex items-center gap-1.5">
           <button
             onClick={onToggleMute}
-            className="p-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition-transform active:scale-95 cursor-pointer"
-            title="Sonido"
+            className="p-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition-transform active:scale-95 cursor-pointer border border-slate-700/80"
+            title="Sonido / Música"
           >
             {isMuted ? <VolumeX className="w-3.5 h-3.5 text-rose-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
           </button>
 
           <button
             onClick={onPause}
-            className="p-1 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-400 transition-transform active:scale-95 cursor-pointer"
-            title="Pausa / Opciones"
+            className="p-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 transition-transform active:scale-95 cursor-pointer border border-amber-500/60 shadow-sm"
+            title="Pausa"
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Pause className="w-3.5 h-3.5 fill-current" />
           </button>
         </div>
       </div>
@@ -108,7 +108,7 @@ export const HUD: React.FC<HUDProps> = ({
           return (
             <button
               key={item.type}
-              onClick={() => onSelectPowerUp(item.type)}
+              onClick={() => onSelectPowerUp(isActive && !isNormal ? 'normal' : item.type)}
               disabled={!isNormal && count <= 0}
               className={`relative flex flex-1 min-w-[28px] max-w-[42px] h-9 sm:h-10 flex-col items-center justify-center rounded-lg border transition-all cursor-pointer ${
                 count <= 0 && !isNormal

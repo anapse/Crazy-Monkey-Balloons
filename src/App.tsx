@@ -23,7 +23,6 @@ export default function App() {
   const [view, setView] = useState<'menu' | 'playing' | 'admin'>('menu');
   const [currentLevelNumber, setCurrentLevelNumber] = useState<number>(1);
   const [playerName, setPlayerName] = useState<string>('');
-  const [pendingActionAfterName, setPendingActionAfterName] = useState<'newGame' | 'retryGameOver' | null>(null);
 
   // Game Stats
   const [score, setScore] = useState<number>(0);
@@ -95,8 +94,11 @@ export default function App() {
 
   const handlePlayClick = () => {
     soundManager.playClick();
-    setPendingActionAfterName('newGame');
-    setShowPlayerNameModal(true);
+    if (!playerName.trim()) {
+      setShowPlayerNameModal(true);
+    } else {
+      startNewGame();
+    }
   };
 
   const handleConfirmName = (name: string) => {
@@ -105,35 +107,17 @@ export default function App() {
     setPlayerName(trimmed);
     StorageService.setPlayerName(trimmed);
     setShowPlayerNameModal(false);
-
-    if (pendingActionAfterName === 'retryGameOver') {
-      setPendingActionAfterName(null);
-      handleRetryLevel();
-    } else {
-      setPendingActionAfterName(null);
-      startNewGame();
-    }
+    startNewGame();
   };
 
   const handleCancelPlayerName = () => {
     setShowPlayerNameModal(false);
-    if (pendingActionAfterName === 'retryGameOver') {
-      setShowGameOver(true);
-    }
-    setPendingActionAfterName(null);
   };
 
-  const handleGameOverKeepName = () => {
+  const handleGameOverPlayAgain = () => {
     soundManager.playClick();
     setShowGameOver(false);
-    handleRetryLevel();
-  };
-
-  const handleGameOverChangeName = () => {
-    soundManager.playClick();
-    setShowGameOver(false);
-    setPendingActionAfterName('retryGameOver');
-    setShowPlayerNameModal(true);
+    startNewGame();
   };
 
   const startNewGame = () => {
@@ -151,9 +135,25 @@ export default function App() {
     setActivePowerUp('normal');
     levelStartTimeRef.current = Date.now();
     setView('playing');
+    soundManager.resumeCircusMusic();
+    if (engineRef.current) {
+      engineRef.current.score = 0;
+      engineRef.current.lives = 3;
+      engineRef.current.inventory = {
+        explosive: 0,
+        triple: 0,
+        piercing: 0,
+        bounce: 0,
+        rainbow: 0,
+        electric: 0,
+      };
+      engineRef.current.activePowerUp = 'normal';
+      engineRef.current.initLevel(getLevelConfig(1));
+    }
   };
 
   const handleLevelWin = useCallback((finalScore: number, balloonsPopped: number) => {
+    soundManager.pauseCircusMusic();
     setScore(finalScore);
     setShowVictory(true);
 
@@ -171,6 +171,7 @@ export default function App() {
   }, [playerName, currentLevelNumber]);
 
   const handleGameOver = useCallback((finalScore: number, levelReached: number) => {
+    soundManager.pauseCircusMusic();
     setScore(finalScore);
     setShowGameOver(true);
 
@@ -197,6 +198,7 @@ export default function App() {
       setTotalBalloons(tot);
     },
     onInventoryUpdate: (inv) => setInventory({ ...inv }),
+    onActivePowerUpChange: (type) => setActivePowerUp(type),
   };
 
   const handleNextLevel = () => {
@@ -204,6 +206,7 @@ export default function App() {
     const nextLvl = currentLevelNumber + 1;
     setCurrentLevelNumber(nextLvl);
     levelStartTimeRef.current = Date.now();
+    soundManager.resumeCircusMusic();
     if (engineRef.current) {
       engineRef.current.initLevel(getLevelConfig(nextLvl));
     }
@@ -213,6 +216,7 @@ export default function App() {
     setShowGameOver(false);
     setLives(3);
     levelStartTimeRef.current = Date.now();
+    soundManager.resumeCircusMusic();
     if (engineRef.current) {
       engineRef.current.lives = 3;
       engineRef.current.initLevel(getLevelConfig(currentLevelNumber));
@@ -221,6 +225,7 @@ export default function App() {
 
   const handlePause = () => {
     soundManager.playClick();
+    soundManager.pauseCircusMusic();
     if (engineRef.current) {
       engineRef.current.isPaused = true;
     }
@@ -229,6 +234,7 @@ export default function App() {
 
   const handleResume = () => {
     soundManager.playClick();
+    soundManager.resumeCircusMusic();
     if (engineRef.current) {
       engineRef.current.isPaused = false;
     }
@@ -237,6 +243,7 @@ export default function App() {
 
   const handleMainMenu = () => {
     soundManager.playClick();
+    soundManager.stopCircusMusic();
     setShowPause(false);
     setShowGameOver(false);
     setShowVictory(false);
@@ -321,13 +328,9 @@ export default function App() {
           initialName={playerName}
           onConfirmName={handleConfirmName}
           onCancel={handleCancelPlayerName}
-          title={pendingActionAfterName === 'retryGameOver' ? 'CAMBIAR NOMBRE' : 'NOMBRE DEL JUGADOR'}
-          subtitle={
-            pendingActionAfterName === 'retryGameOver'
-              ? 'Introduce tu nuevo nombre para continuar tu partida y registrar tu récord.'
-              : 'Ingresa obligatoriamente tu nombre para comenzar la partida y guardar tu ranking.'
-          }
-          confirmButtonText={pendingActionAfterName === 'retryGameOver' ? 'CONTINUAR' : 'JUGAR'}
+          title="NOMBRE DEL JUGADOR"
+          subtitle="Ingresa tu nombre para comenzar la partida y guardar tu ranking global."
+          confirmButtonText="JUGAR"
         />
       )}
 
@@ -365,8 +368,7 @@ export default function App() {
           score={score}
           levelNumber={currentLevelNumber}
           playerName={playerName}
-          onKeepName={handleGameOverKeepName}
-          onChangeName={handleGameOverChangeName}
+          onPlayAgain={handleGameOverPlayAgain}
           onMainMenu={handleMainMenu}
         />
       )}

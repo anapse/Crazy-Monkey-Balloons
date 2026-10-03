@@ -22,6 +22,7 @@ export interface GameCallbacks {
   onLivesUpdate: (lives: number) => void;
   onBalloonsUpdate: (remaining: number, total: number) => void;
   onInventoryUpdate: (inventory: PowerUpInventory) => void;
+  onActivePowerUpChange?: (type: PowerUpType | 'normal') => void;
 }
 
 interface BalloonOffset {
@@ -166,48 +167,60 @@ export class GameEngine {
       maxX: o.maxX ? (o.maxX / 100) * this.width : undefined,
     }));
 
-    // Dense 28-Position Organic Balloon Bouquet Layout surrounding & crowning the monkey
+    // Dense 40-Position Organic Balloon Bouquet Layout surrounding & crowning the monkey
     this.balloonOffsets.clear();
     const rawBalloons = levelConfig.balloons;
 
     const bouquetPositions: { relX: number; relY: number; isFront: boolean }[] = [
-      // Top Apex Row (Back) - Y = -168 to -150
-      { relX: -80, relY: -150, isFront: false },
-      { relX: -40, relY: -160, isFront: false },
-      { relX: 0, relY: -168, isFront: false },
-      { relX: 40, relY: -160, isFront: false },
-      { relX: 80, relY: -150, isFront: false },
+      // Row 1: Top Apex Row (7 balloons) - Y = -182 to -165
+      { relX: -90, relY: -165, isFront: false },
+      { relX: -60, relY: -172, isFront: false },
+      { relX: -30, relY: -178, isFront: false },
+      { relX: 0, relY: -182, isFront: false },
+      { relX: 30, relY: -178, isFront: false },
+      { relX: 60, relY: -172, isFront: false },
+      { relX: 90, relY: -165, isFront: false },
 
-      // Upper Mid Row - Y = -140 to -125
-      { relX: -100, relY: -125, isFront: false },
-      { relX: -65, relY: -135, isFront: true },
-      { relX: -25, relY: -140, isFront: false },
-      { relX: 25, relY: -140, isFront: false },
-      { relX: 65, relY: -135, isFront: true },
-      { relX: 100, relY: -125, isFront: false },
+      // Row 2: Upper Mid Tier (9 balloons) - Y = -160 to -142
+      { relX: -115, relY: -142, isFront: false },
+      { relX: -85, relY: -148, isFront: true },
+      { relX: -55, relY: -154, isFront: false },
+      { relX: -25, relY: -158, isFront: false },
+      { relX: 0, relY: -160, isFront: true },
+      { relX: 25, relY: -158, isFront: false },
+      { relX: 55, relY: -154, isFront: false },
+      { relX: 85, relY: -148, isFront: true },
+      { relX: 115, relY: -142, isFront: false },
 
-      // Mid Overlap Crown Row - Y = -120 to -98
-      { relX: -115, relY: -98, isFront: true },
-      { relX: -75, relY: -108, isFront: false },
-      { relX: -40, relY: -112, isFront: true },
-      { relX: 0, relY: -120, isFront: true },
-      { relX: 40, relY: -112, isFront: true },
-      { relX: 75, relY: -108, isFront: false },
-      { relX: 115, relY: -98, isFront: true },
+      // Row 3: Mid-Upper Tier (9 balloons) - Y = -136 to -118
+      { relX: -125, relY: -118, isFront: true },
+      { relX: -95, relY: -124, isFront: false },
+      { relX: -65, relY: -130, isFront: true },
+      { relX: -35, relY: -134, isFront: false },
+      { relX: 0, relY: -136, isFront: true },
+      { relX: 35, relY: -134, isFront: false },
+      { relX: 65, relY: -130, isFront: true },
+      { relX: 95, relY: -124, isFront: false },
+      { relX: 125, relY: -118, isFront: true },
 
-      // Lower Mid Row - Y = -88 to -72
-      { relX: -95, relY: -72, isFront: false },
-      { relX: -55, relY: -82, isFront: true },
-      { relX: -18, relY: -88, isFront: false },
-      { relX: 18, relY: -88, isFront: false },
-      { relX: 55, relY: -82, isFront: true },
-      { relX: 95, relY: -72, isFront: false },
+      // Row 4: Center Overlap Tier (8 balloons) - Y = -108 to -92
+      { relX: -110, relY: -92, isFront: false },
+      { relX: -75, relY: -98, isFront: true },
+      { relX: -45, relY: -105, isFront: false },
+      { relX: -15, relY: -108, isFront: true },
+      { relX: 15, relY: -108, isFront: true },
+      { relX: 45, relY: -105, isFront: false },
+      { relX: 75, relY: -98, isFront: true },
+      { relX: 110, relY: -92, isFront: false },
 
-      // Flanking Monkey Body - Y = -58 to -48
-      { relX: -75, relY: -48, isFront: true },
-      { relX: -35, relY: -58, isFront: true },
-      { relX: 35, relY: -58, isFront: true },
-      { relX: 75, relY: -48, isFront: true },
+      // Row 5: Lower Flanking Tier around Monkey (7 balloons) - Y = -82 to -65
+      { relX: -95, relY: -65, isFront: true },
+      { relX: -65, relY: -74, isFront: true },
+      { relX: -35, relY: -80, isFront: false },
+      { relX: 0, relY: -82, isFront: true },
+      { relX: 35, relY: -80, isFront: false },
+      { relX: 65, relY: -74, isFront: true },
+      { relX: 95, relY: -65, isFront: true },
     ];
 
     this.balloons = rawBalloons.map((b, idx) => {
@@ -249,10 +262,12 @@ export class GameEngine {
 
   public start() {
     this.lastTime = performance.now();
+    soundManager.startCircusMusic();
     this.loop(this.lastTime);
   }
 
   public stop() {
+    soundManager.stopCircusMusic();
     if (this.animFrameId !== null) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
@@ -261,6 +276,11 @@ export class GameEngine {
 
   public togglePause(): boolean {
     this.isPaused = !this.isPaused;
+    if (this.isPaused) {
+      soundManager.pauseCircusMusic();
+    } else {
+      soundManager.resumeCircusMusic();
+    }
     return this.isPaused;
   }
 
@@ -269,7 +289,10 @@ export class GameEngine {
       this.activePowerUp = 'normal';
     } else if (this.inventory[type] > 0) {
       this.activePowerUp = type;
+    } else {
+      this.activePowerUp = 'normal';
     }
+    this.callbacks.onActivePowerUpChange?.(this.activePowerUp);
     this.callbacks.onInventoryUpdate(this.inventory);
   }
 
@@ -341,6 +364,7 @@ export class GameEngine {
       this.callbacks.onInventoryUpdate(this.inventory);
       if (this.inventory[currentType] <= 0) {
         this.activePowerUp = 'normal';
+        this.callbacks.onActivePowerUpChange?.('normal');
       }
     }
 
@@ -521,29 +545,29 @@ export class GameEngine {
 
     let vx = (Math.random() - 0.5) * 80;
     let vy = 110;
-    let radius = 17;
+    let radius = 26;
 
     if (type === 'rock') {
       vy = 180; // Heavy ballistic plunge
-      radius = 18;
+      radius = 28;
     } else if (type === 'coconut') {
       vy = 160; // Fast dense drop
-      radius = 17;
+      radius = 27;
     } else if (type === 'bomb') {
       vx = (Math.random() - 0.5) * 90;
       vy = 95; // Arched lob
-      radius = 18;
+      radius = 29;
     } else if (type === 'banana') {
       vx = (Math.random() - 0.5) * 120;
       vy = 100;
-      radius = 16;
+      radius = 26;
     } else if (type === 'boomerang') {
       vx = this.groupX > this.cannonX ? -110 : 110;
       vy = 85;
-      radius = 17;
+      radius = 28;
     } else if (type === 'orange') {
       vy = 120;
-      radius = 16;
+      radius = 26;
     }
 
     this.droppedItems.push({
@@ -650,10 +674,11 @@ export class GameEngine {
 
           const countToAdd = box.powerUp === 'rainbow' ? 1 : 2;
           this.inventory[box.powerUp] += countToAdd;
-          this.activePowerUp = box.powerUp;
+          // Note: Power-Ups do NOT activate automatically upon collection.
+          // Player chooses and activates them from the bottom bar.
 
           this.addExplosionParticles(box.x, box.y);
-          this.addFloatingText(`¡PREMIO ${box.powerUp.toUpperCase()}!`, box.x, box.y, '#4ade80');
+          this.addFloatingText(`+${countToAdd} ${box.powerUp.toUpperCase()}`, box.x, box.y, '#4ade80');
           this.callbacks.onInventoryUpdate(this.inventory);
         }
       });
@@ -687,6 +712,7 @@ export class GameEngine {
     let damage = 1;
 
     if (p.type === 'rainbow') damage = 3;
+    if (p.type === 'piercing') damage = 2;
     if (p.type === 'explosive') {
       damage = 3;
       this.triggerExplosion(p.x, p.y, 85);
@@ -715,8 +741,9 @@ export class GameEngine {
       this.callbacks.onScoreUpdate(this.score);
       this.callbacks.onBalloonsUpdate(this.totalBalloonsInLevel - this.balloonsPoppedInLevel, this.totalBalloonsInLevel);
     } else {
-      soundManager.playBounce();
+      soundManager.playBalloonHit();
       this.addSparkParticles(b.x, b.y, '#ffffff');
+      this.addFloatingText(`-1 HP (${b.hp}/${b.maxHp})`, b.x, b.y, '#38bdf8');
     }
 
     if (p.type !== 'piercing' && p.type !== 'rainbow') {
@@ -1253,17 +1280,55 @@ export class GameEngine {
       ctx.ellipse(b.x - b.radius * 0.35, b.y - b.radius * 0.35, b.radius * 0.3, b.radius * 0.18, -Math.PI / 4, 0, Math.PI * 2);
       ctx.fill();
 
-      // Damage cracks for reinforced / heavy balloons
-      if (b.type === 'heavy' || b.type === 'reinforced') {
-        if (b.hp < b.maxHp) {
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-          ctx.lineWidth = 2.5;
-          ctx.beginPath();
-          ctx.moveTo(b.x - 7, b.y - 4);
-          ctx.lineTo(b.x, b.y + 4);
-          ctx.lineTo(b.x + 7, b.y - 3);
-          ctx.stroke();
-        }
+      // Visual Armor Bands for Resistant Balloons
+      if (b.type === 'reinforced') {
+        // Metallic Silver/Gold Reinforced Ring
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.ellipse(b.x, b.y, b.radius * 0.92, b.radius * 0.38, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.arc(b.x - b.radius * 0.6, b.y, 2, 0, Math.PI * 2);
+        ctx.arc(b.x + b.radius * 0.6, b.y, 2, 0, Math.PI * 2);
+        ctx.arc(b.x, b.y + b.radius * 0.3, 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (b.type === 'heavy') {
+        // Heavy Studded Titanium Dark Steel Band
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.ellipse(b.x, b.y, b.radius * 0.95, b.radius * 0.45, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(b.x - b.radius * 0.6, b.y, 2.5, 0, Math.PI * 2);
+        ctx.arc(b.x + b.radius * 0.6, b.y, 2.5, 0, Math.PI * 2);
+        ctx.arc(b.x, b.y + b.radius * 0.35, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Damage cracks for reinforced / heavy balloons when damaged
+      if ((b.type === 'heavy' || b.type === 'reinforced') && b.hp < b.maxHp) {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(b.x - 9, b.y - 6);
+        ctx.lineTo(b.x - 2, b.y + 1);
+        ctx.lineTo(b.x + 3, b.y - 5);
+        ctx.lineTo(b.x + 8, b.y + 4);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1;
+        ctx.stroke();
       }
 
       ctx.restore();
@@ -1298,15 +1363,15 @@ export class GameEngine {
       this.monkeyHeight
     );
 
-    // Render prepared item in monkey's free throwing hand
+    // Render prepared item in monkey's free throwing hand (Enlarged 44x44)
     if (this.monkeyAttackState === 'preparing' && this.monkeyState === 'swinging') {
       const handX = this.groupX + (this.groupVx > 0 ? 45 : -45);
       const handY = this.groupY + 30;
 
       // Glow effect around weapon in hand
       ctx.shadowColor = '#f59e0b';
-      ctx.shadowBlur = 8;
-      assetManager.drawAsset(ctx, `items.${this.monkeyNextItemType}`, handX - 16, handY - 16, 32, 32);
+      ctx.shadowBlur = 10;
+      assetManager.drawAsset(ctx, `items.${this.monkeyNextItemType}`, handX - 22, handY - 22, 44, 44);
     }
 
     ctx.restore();
@@ -1325,7 +1390,7 @@ export class GameEngine {
     });
   }
 
-  // Render Dropped Items with Distinct Visual Danger Effects (Requirement 11)
+  // Render Dropped Items with Distinct Visual Danger Effects (Enlarged & High Visibility)
   private renderDroppedItems() {
     const ctx = this.ctx;
     this.droppedItems.forEach((item) => {
@@ -1335,32 +1400,33 @@ export class GameEngine {
       if (item.type === 'bomb') {
         const groundY = 735;
         const pulse = Math.sin(this.animTime * 10) * 4;
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.ellipse(item.x, groundY, 22 + pulse, 6, 0, 0, Math.PI * 2);
+        ctx.ellipse(item.x, groundY, 26 + pulse, 7, 0, 0, Math.PI * 2);
         ctx.stroke();
 
         ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 10px sans-serif';
+        ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('⚠️ PELIGRO', item.x, groundY - 8);
+        ctx.fillText('⚠️ PELIGRO', item.x, groundY - 10);
       }
 
       ctx.translate(item.x, item.y);
       ctx.rotate(item.rotation);
 
-      // Distinct danger aura per item type
-      if (item.type === 'bomb') {
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 14;
-      } else if (item.type === 'coconut') {
-        ctx.shadowColor = '#78350f';
-        ctx.shadowBlur = 8;
-      } else if (item.type === 'boomerang') {
-        ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = 10;
-      }
+      // Distinct high-contrast aura per item type
+      ctx.shadowColor =
+        item.type === 'bomb'
+          ? '#ef4444'
+          : item.type === 'banana'
+          ? '#eab308'
+          : item.type === 'boomerang'
+          ? '#38bdf8'
+          : item.type === 'coconut'
+          ? '#854d0e'
+          : '#fb923c';
+      ctx.shadowBlur = 14;
 
       assetManager.drawAsset(
         ctx,

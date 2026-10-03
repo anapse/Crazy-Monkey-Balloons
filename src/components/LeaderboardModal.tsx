@@ -8,10 +8,25 @@ interface LeaderboardModalProps {
 }
 
 export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ onClose }) => {
-  const [scores, setScores] = useState<ScoreEntry[]>([]);
+  const [scores, setScores] = useState<ScoreEntry[]>(StorageService.getTop50());
+  const [loadingOnline, setLoadingOnline] = useState<boolean>(true);
 
   useEffect(() => {
-    setScores(StorageService.getTop50());
+    let isMounted = true;
+    StorageService.fetchOnlineTop50()
+      .then((updated) => {
+        if (isMounted) {
+          setScores(updated);
+          setLoadingOnline(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setLoadingOnline(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
@@ -29,7 +44,12 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ onClose }) =
             <Trophy className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-xl font-black text-white tracking-wide">TOP 50 JUGADORES</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-lg font-black text-white tracking-wide">TOP 50 JUGADORES</h3>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold uppercase">
+                {loadingOnline ? 'Conectando...' : 'En la Nube'}
+              </span>
+            </div>
             <p className="text-[11px] text-slate-400">Récords globales de Crazy Monkey Balloons</p>
           </div>
         </div>

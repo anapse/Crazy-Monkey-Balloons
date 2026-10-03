@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "Score": {
+      "title": "Score",
+      "description": "Jugada guardada en la tabla de clasificación global",
+      "type": "object",
+      "properties": {
+        "playerName": {
+          "type": "string",
+          "description": "Nombre del jugador"
+        },
+        "score": {
+          "type": "number",
+          "description": "Puntuación acumulada"
+        },
+        "level": {
+          "type": "number",
+          "description": "Nivel alcanzado"
+        },
+        "balloonsPopped": {
+          "type": "number",
+          "description": "Cantidad total de globos reventados"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Marca de tiempo de la partida"
+        }
+      },
+      "required": ["playerName", "score", "level"]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Mensaje enviado desde el formulario de contacto",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Nombre del remitente"
+        },
+        "email": {
+          "type": "string",
+          "description": "Correo del remitente"
+        },
+        "message": {
+          "type": "string",
+          "description": "Contenido del mensaje"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Marca de tiempo del envío"
+        }
+      },
+      "required": ["name", "email", "message"]
+    },
+    "GameStats": {
+      "title": "GameStats",
+      "description": "Estadísticas globales del juego visibles en el panel de administración",
+      "type": "object",
+      "properties": {
+        "visits": {
+          "type": "number",
+          "description": "Visitas totales"
+        },
+        "totalPlays": {
+          "type": "number",
+          "description": "Partidas totales jugadas"
+        },
+        "totalBalloonsPopped": {
+          "type": "number",
+          "description": "Globos totales reventados"
+        },
+        "lastUpdated": {
+          "type": "number",
+          "description": "Última fecha de actualización"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/scores/{scoreId}": {
+      "schema": "Score",
+      "description": "Puntajes del Top 50 Global"
+    },
+    "/messages/{messageId}": {
+      "schema": "ContactMessage",
+      "description": "Mensajes de contacto recibidos"
+    },
+    "/analytics/{statDoc}": {
+      "schema": "GameStats",
+      "description": "Métricas y estadísticas de partidas"
+    }
+  }
+}

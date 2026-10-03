@@ -1,7 +1,39 @@
 import { LevelConfig, BalloonColor, BalloonType } from '../types/game';
 
+function create40Balloons(options: {
+  prizeIndices?: number[];
+  heavyIndices?: number[];
+  reinforcedIndices?: number[];
+  colors?: BalloonColor[];
+}): LevelConfig['balloons'] {
+  const defaultColors: BalloonColor[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'cyan', 'pink'];
+  const colors = options.colors || defaultColors;
+  const prizeSet = new Set(options.prizeIndices || [3, 15, 27, 35]);
+  const heavySet = new Set(options.heavyIndices || [5, 11, 18, 24, 31, 37]);
+  const reinforcedSet = new Set(options.reinforcedIndices || [1, 7, 13, 19, 23, 29, 33, 39]);
+
+  const list: LevelConfig['balloons'] = [];
+  for (let i = 0; i < 40; i++) {
+    const isPrize = prizeSet.has(i);
+    const isHeavy = heavySet.has(i);
+    const isReinforced = reinforcedSet.has(i);
+
+    const type: BalloonType = isPrize ? 'prize' : isHeavy ? 'heavy' : isReinforced ? 'reinforced' : 'normal';
+    const color: BalloonColor = isPrize ? 'gold' : colors[i % colors.length];
+
+    list.push({
+      x: 12 + (i % 8) * 11,
+      y: 6 + Math.floor(i / 8) * 4,
+      color,
+      type,
+      hasPrize: isPrize,
+    });
+  }
+  return list;
+}
+
 export const GAME_LEVELS: LevelConfig[] = [
-  // LEVEL 1: Selva - Gran racimo de 30 globos multicolores
+  // LEVEL 1: Selva - 40 globos multicolores
   {
     id: 1,
     name: 'La Selva Encantada',
@@ -10,51 +42,18 @@ export const GAME_LEVELS: LevelConfig[] = [
     bgColor2: '#1b5e20',
     accentColor: '#4caf50',
     monkeySpeed: 1.5,
-    monkeyDropInterval: 2.6, // Mono activo y agresivo
+    monkeyDropInterval: 2.6,
     monkeyAllowedItems: ['banana', 'orange', 'rock', 'coconut'],
     obstacles: [],
-    balloons: [
-      // Fila 1 - Superior (7 globos)
-      { x: 22, y: 10, color: 'purple', type: 'normal' },
-      { x: 31, y: 9, color: 'red', type: 'normal' },
-      { x: 41, y: 8, color: 'blue', type: 'normal' },
-      { x: 50, y: 7, color: 'gold', type: 'prize', hasPrize: true }, // Globo especial con estrella
-      { x: 59, y: 8, color: 'green', type: 'normal' },
-      { x: 69, y: 9, color: 'yellow', type: 'normal' },
-      { x: 78, y: 10, color: 'orange', type: 'normal' },
-
-      // Fila 2 - Media Superior (8 globos)
-      { x: 18, y: 14, color: 'cyan', type: 'normal' },
-      { x: 27, y: 13, color: 'pink', type: 'normal' },
-      { x: 36, y: 12, color: 'orange', type: 'reinforced' },
-      { x: 45, y: 11, color: 'cyan', type: 'normal' },
-      { x: 55, y: 11, color: 'blue', type: 'reinforced' },
-      { x: 64, y: 12, color: 'green', type: 'normal' },
-      { x: 73, y: 13, color: 'red', type: 'reinforced' },
-      { x: 82, y: 14, color: 'yellow', type: 'normal' },
-
-      // Fila 3 - Media (8 globos)
-      { x: 20, y: 19, color: 'yellow', type: 'normal' },
-      { x: 29, y: 18, color: 'blue', type: 'normal' },
-      { x: 38, y: 17, color: 'red', type: 'reinforced' },
-      { x: 46, y: 16, color: 'purple', type: 'normal' },
-      { x: 54, y: 16, color: 'green', type: 'reinforced' },
-      { x: 62, y: 17, color: 'orange', type: 'normal' },
-      { x: 71, y: 18, color: 'cyan', type: 'normal' },
-      { x: 80, y: 19, color: 'pink', type: 'reinforced' },
-
-      // Fila 4 - Flancos e integración Mono (7 globos)
-      { x: 24, y: 24, color: 'orange', type: 'normal' },
-      { x: 33, y: 23, color: 'cyan', type: 'normal' },
-      { x: 42, y: 22, color: 'yellow', type: 'normal' },
-      { x: 50, y: 21, color: 'purple', type: 'reinforced' },
-      { x: 58, y: 22, color: 'pink', type: 'normal' },
-      { x: 67, y: 23, color: 'blue', type: 'normal' },
-      { x: 76, y: 24, color: 'green', type: 'normal' },
-    ],
+    balloons: create40Balloons({
+      prizeIndices: [4, 18, 32],
+      heavyIndices: [7, 15, 23, 31],
+      reinforcedIndices: [2, 9, 12, 20, 26, 35, 38],
+      colors: ['green', 'yellow', 'orange', 'red', 'purple', 'blue', 'cyan', 'pink'],
+    }),
   },
 
-  // LEVEL 2: Cielo Nublado - 30 globos y 2 GRANDES obstáculos de madera visibles
+  // LEVEL 2: Cielo Nublado - 40 globos y Obstáculos de madera
   {
     id: 2,
     name: 'Cielo Nublado',
@@ -66,48 +65,18 @@ export const GAME_LEVELS: LevelConfig[] = [
     monkeyDropInterval: 2.3,
     monkeyAllowedItems: ['banana', 'rock', 'coconut', 'bomb'],
     obstacles: [
-      // Obstáculos prominentes, con altura 20px y textura contrastante
       { x: 28, y: 48, w: 24, h: 20, type: 'wood' },
       { x: 72, y: 48, w: 24, h: 20, type: 'wood' },
     ],
-    balloons: [
-      { x: 18, y: 10, color: 'orange', type: 'normal' },
-      { x: 28, y: 9, color: 'yellow', type: 'normal' },
-      { x: 38, y: 8, color: 'red', type: 'reinforced' },
-      { x: 50, y: 7, color: 'gold', type: 'prize', hasPrize: true },
-      { x: 62, y: 8, color: 'purple', type: 'normal' },
-      { x: 72, y: 9, color: 'blue', type: 'normal' },
-      { x: 82, y: 10, color: 'cyan', type: 'normal' },
-
-      { x: 20, y: 14, color: 'green', type: 'normal' },
-      { x: 30, y: 13, color: 'orange', type: 'reinforced' },
-      { x: 40, y: 12, color: 'cyan', type: 'normal' },
-      { x: 50, y: 11, color: 'red', type: 'heavy' },
-      { x: 60, y: 12, color: 'yellow', type: 'reinforced' },
-      { x: 70, y: 13, color: 'pink', type: 'normal' },
-      { x: 80, y: 14, color: 'purple', type: 'normal' },
-
-      { x: 14, y: 18, color: 'yellow', type: 'reinforced' },
-      { x: 25, y: 19, color: 'blue', type: 'reinforced' },
-      { x: 35, y: 18, color: 'gold', type: 'prize', hasPrize: true }, // Segundo globo de premio
-      { x: 45, y: 17, color: 'green', type: 'normal' },
-      { x: 55, y: 17, color: 'orange', type: 'heavy' },
-      { x: 65, y: 18, color: 'cyan', type: 'normal' },
-      { x: 75, y: 19, color: 'red', type: 'reinforced' },
-      { x: 86, y: 18, color: 'purple', type: 'normal' },
-
-      { x: 22, y: 24, color: 'red', type: 'normal' },
-      { x: 30, y: 24, color: 'yellow', type: 'normal' },
-      { x: 40, y: 23, color: 'purple', type: 'normal' },
-      { x: 50, y: 22, color: 'blue', type: 'normal' },
-      { x: 60, y: 23, color: 'green', type: 'normal' },
-      { x: 70, y: 24, color: 'pink', type: 'normal' },
-      { x: 78, y: 24, color: 'green', type: 'reinforced' },
-      { x: 50, y: 26, color: 'orange', type: 'reinforced' },
-    ],
+    balloons: create40Balloons({
+      prizeIndices: [3, 16, 28, 36],
+      heavyIndices: [6, 12, 20, 25, 33, 37],
+      reinforcedIndices: [1, 8, 14, 19, 22, 29, 34],
+      colors: ['cyan', 'blue', 'purple', 'pink', 'yellow', 'orange', 'red', 'green'],
+    }),
   },
 
-  // LEVEL 3: Ruinas Antiguas - 30 globos y Barrera de Acero Central
+  // LEVEL 3: Ruinas Antiguas - 40 globos y Barrera de Acero
   {
     id: 3,
     name: 'Ruinas de Piedra',
@@ -121,44 +90,15 @@ export const GAME_LEVELS: LevelConfig[] = [
     obstacles: [
       { x: 50, y: 46, w: 34, h: 22, type: 'metal' },
     ],
-    balloons: [
-      { x: 15, y: 10, color: 'pink', type: 'normal' },
-      { x: 25, y: 9, color: 'orange', type: 'reinforced' },
-      { x: 36, y: 7, color: 'purple', type: 'normal' },
-      { x: 48, y: 6, color: 'red', type: 'heavy' },
-      { x: 52, y: 6, color: 'gold', type: 'prize', hasPrize: true },
-      { x: 64, y: 7, color: 'green', type: 'normal' },
-      { x: 75, y: 9, color: 'yellow', type: 'reinforced' },
-      { x: 85, y: 10, color: 'cyan', type: 'normal' },
-
-      { x: 18, y: 14, color: 'blue', type: 'normal' },
-      { x: 28, y: 13, color: 'cyan', type: 'normal' },
-      { x: 38, y: 12, color: 'gold', type: 'prize', hasPrize: true },
-      { x: 48, y: 11, color: 'red', type: 'heavy' },
-      { x: 58, y: 11, color: 'purple', type: 'heavy' },
-      { x: 68, y: 12, color: 'orange', type: 'normal' },
-      { x: 78, y: 13, color: 'green', type: 'reinforced' },
-      { x: 84, y: 14, color: 'pink', type: 'normal' },
-
-      { x: 14, y: 18, color: 'orange', type: 'reinforced' },
-      { x: 24, y: 19, color: 'yellow', type: 'reinforced' },
-      { x: 34, y: 18, color: 'blue', type: 'heavy' },
-      { x: 44, y: 17, color: 'red', type: 'normal' },
-      { x: 56, y: 17, color: 'cyan', type: 'reinforced' },
-      { x: 66, y: 18, color: 'yellow', type: 'normal' },
-      { x: 76, y: 19, color: 'blue', type: 'reinforced' },
-      { x: 86, y: 18, color: 'purple', type: 'heavy' },
-
-      { x: 30, y: 24, color: 'green', type: 'reinforced' },
-      { x: 40, y: 23, color: 'orange', type: 'normal' },
-      { x: 50, y: 22, color: 'purple', type: 'heavy' },
-      { x: 60, y: 23, color: 'blue', type: 'reinforced' },
-      { x: 70, y: 24, color: 'red', type: 'normal' },
-      { x: 50, y: 26, color: 'pink', type: 'normal' },
-    ],
+    balloons: create40Balloons({
+      prizeIndices: [5, 17, 29, 38],
+      heavyIndices: [4, 9, 13, 21, 26, 32, 36],
+      reinforcedIndices: [0, 6, 11, 16, 22, 28, 34],
+      colors: ['orange', 'yellow', 'red', 'purple', 'blue', 'cyan', 'green', 'pink'],
+    }),
   },
 
-  // LEVEL 4: Desierto - 30 globos y Obstáculos móviles
+  // LEVEL 4: Desierto - 40 globos y Obstáculos móviles
   {
     id: 4,
     name: 'Dunas del Desierto',
@@ -173,44 +113,15 @@ export const GAME_LEVELS: LevelConfig[] = [
       { x: 28, y: 48, w: 22, h: 20, type: 'wood', moving: true, vx: 1.6, minX: 14, maxX: 44 },
       { x: 72, y: 48, w: 22, h: 20, type: 'wood', moving: true, vx: -1.6, minX: 56, maxX: 86 },
     ],
-    balloons: [
-      { x: 14, y: 8, color: 'cyan', type: 'normal' },
-      { x: 24, y: 9, color: 'yellow', type: 'normal' },
-      { x: 35, y: 7, color: 'red', type: 'reinforced' },
-      { x: 45, y: 6, color: 'gold', type: 'prize', hasPrize: true },
-      { x: 55, y: 6, color: 'blue', type: 'reinforced' },
-      { x: 65, y: 7, color: 'orange', type: 'normal' },
-      { x: 76, y: 9, color: 'green', type: 'heavy' },
-      { x: 86, y: 8, color: 'pink', type: 'heavy' },
-
-      { x: 18, y: 13, color: 'purple', type: 'heavy' },
-      { x: 28, y: 12, color: 'cyan', type: 'normal' },
-      { x: 38, y: 11, color: 'red', type: 'heavy' },
-      { x: 48, y: 10, color: 'gold', type: 'prize', hasPrize: true },
-      { x: 58, y: 10, color: 'blue', type: 'heavy' },
-      { x: 68, y: 11, color: 'pink', type: 'normal' },
-      { x: 78, y: 12, color: 'yellow', type: 'heavy' },
-      { x: 84, y: 13, color: 'orange', type: 'normal' },
-
-      { x: 22, y: 18, color: 'green', type: 'reinforced' },
-      { x: 32, y: 17, color: 'yellow', type: 'normal' },
-      { x: 42, y: 16, color: 'purple', type: 'heavy' },
-      { x: 52, y: 16, color: 'red', type: 'reinforced' },
-      { x: 62, y: 16, color: 'cyan', type: 'normal' },
-      { x: 72, y: 17, color: 'blue', type: 'reinforced' },
-      { x: 80, y: 18, color: 'pink', type: 'normal' },
-
-      { x: 28, y: 23, color: 'orange', type: 'normal' },
-      { x: 38, y: 22, color: 'blue', type: 'heavy' },
-      { x: 48, y: 21, color: 'green', type: 'reinforced' },
-      { x: 58, y: 21, color: 'yellow', type: 'normal' },
-      { x: 68, y: 22, color: 'red', type: 'heavy' },
-      { x: 45, y: 25, color: 'purple', type: 'normal' },
-      { x: 55, y: 25, color: 'gold', type: 'prize', hasPrize: true },
-    ],
+    balloons: create40Balloons({
+      prizeIndices: [3, 14, 25, 35],
+      heavyIndices: [5, 10, 16, 21, 27, 33, 38],
+      reinforcedIndices: [1, 7, 12, 18, 23, 29, 36],
+      colors: ['yellow', 'orange', 'red', 'purple', 'cyan', 'green', 'blue', 'pink'],
+    }),
   },
 
-  // LEVEL 5: Pico Helado - 30 globos y Bumpers Neón
+  // LEVEL 5: Pico Helado - 40 globos y Bumpers Neón
   {
     id: 5,
     name: 'Pico Helado',
@@ -226,42 +137,12 @@ export const GAME_LEVELS: LevelConfig[] = [
       { x: 22, y: 56, w: 18, h: 18, type: 'wood' },
       { x: 78, y: 56, w: 18, h: 18, type: 'wood' },
     ],
-    balloons: [
-      { x: 22, y: 8, color: 'blue', type: 'heavy' },
-      { x: 33, y: 6, color: 'purple', type: 'heavy' },
-      { x: 45, y: 5, color: 'gold', type: 'prize', hasPrize: true },
-      { x: 55, y: 5, color: 'gold', type: 'prize', hasPrize: true },
-      { x: 67, y: 6, color: 'blue', type: 'heavy' },
-      { x: 78, y: 8, color: 'cyan', type: 'heavy' },
-
-      { x: 16, y: 12, color: 'red', type: 'normal' },
-      { x: 26, y: 11, color: 'yellow', type: 'reinforced' },
-      { x: 36, y: 10, color: 'pink', type: 'normal' },
-      { x: 46, y: 9, color: 'red', type: 'heavy' },
-      { x: 54, y: 9, color: 'blue', type: 'heavy' },
-      { x: 64, y: 10, color: 'green', type: 'reinforced' },
-      { x: 74, y: 11, color: 'orange', type: 'normal' },
-      { x: 84, y: 12, color: 'purple', type: 'heavy' },
-
-      { x: 20, y: 17, color: 'cyan', type: 'reinforced' },
-      { x: 30, y: 16, color: 'orange', type: 'heavy' },
-      { x: 40, y: 15, color: 'yellow', type: 'reinforced' },
-      { x: 50, y: 14, color: 'gold', type: 'prize', hasPrize: true },
-      { x: 60, y: 15, color: 'red', type: 'heavy' },
-      { x: 70, y: 16, color: 'blue', type: 'reinforced' },
-      { x: 80, y: 17, color: 'green', type: 'heavy' },
-
-      { x: 26, y: 22, color: 'purple', type: 'normal' },
-      { x: 36, y: 21, color: 'pink', type: 'normal' },
-      { x: 46, y: 20, color: 'blue', type: 'heavy' },
-      { x: 54, y: 20, color: 'yellow', type: 'reinforced' },
-      { x: 64, y: 21, color: 'cyan', type: 'normal' },
-      { x: 74, y: 22, color: 'red', type: 'reinforced' },
-
-      { x: 40, y: 25, color: 'orange', type: 'normal' },
-      { x: 50, y: 24, color: 'gold', type: 'prize', hasPrize: true },
-      { x: 60, y: 25, color: 'purple', type: 'normal' },
-    ],
+    balloons: create40Balloons({
+      prizeIndices: [4, 15, 26, 37],
+      heavyIndices: [2, 8, 13, 19, 24, 30, 36, 39],
+      reinforcedIndices: [0, 6, 11, 17, 22, 28, 33],
+      colors: ['blue', 'cyan', 'purple', 'pink', 'yellow', 'green', 'orange', 'red'],
+    }),
   },
 ];
 
@@ -269,7 +150,7 @@ export function getLevelConfig(levelNumber: number): LevelConfig {
   const existing = GAME_LEVELS.find((l) => l.id === levelNumber);
   if (existing) return existing;
 
-  // Procedural generator for higher levels (>5) with 24-30 balloons and thick obstacles
+  // Procedural generator for higher levels (>5) with exactly 40 balloons
   const themes: LevelConfig['theme'][] = ['jungle', 'sky', 'ruins', 'desert', 'snow', 'canyon', 'factory', 'temple', 'volcano', 'mountain'];
   const theme = themes[(levelNumber - 1) % themes.length];
   const bgColors: { [key: string]: [string, string, string] } = {
@@ -285,24 +166,6 @@ export function getLevelConfig(levelNumber: number): LevelConfig {
     mountain: ['#020617', '#0f172a', '#38bdf8'],
   };
 
-  const colors: BalloonColor[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'cyan', 'pink'];
-  const balloonCount = 30; // 30 globos para todos los niveles
-  const generatedBalloons = [];
-
-  for (let i = 0; i < balloonCount; i++) {
-    const color = colors[i % colors.length];
-    const isPrize = i === 2 || i === 14 || i === 22;
-    const type: BalloonType = isPrize ? 'prize' : (i % 3 === 0 ? 'heavy' : (i % 2 === 0 ? 'reinforced' : 'normal'));
-
-    generatedBalloons.push({
-      x: 20 + (i % 6) * 12,
-      y: 8 + Math.floor(i / 6) * 5,
-      color,
-      type,
-      hasPrize: isPrize,
-    });
-  }
-
   return {
     id: levelNumber,
     name: `Nivel Extremo ${levelNumber}`,
@@ -317,6 +180,10 @@ export function getLevelConfig(levelNumber: number): LevelConfig {
       { x: 30, y: 48, w: 22, h: 20, type: 'wood', moving: true, vx: 1.8, minX: 14, maxX: 44 },
       { x: 70, y: 48, w: 22, h: 20, type: 'metal', moving: true, vx: -1.8, minX: 56, maxX: 86 },
     ],
-    balloons: generatedBalloons,
+    balloons: create40Balloons({
+      prizeIndices: [3, 14, 25, 36],
+      heavyIndices: [2, 7, 12, 18, 23, 29, 34, 39],
+      reinforcedIndices: [1, 6, 11, 16, 21, 27, 32, 37],
+    }),
   };
 }

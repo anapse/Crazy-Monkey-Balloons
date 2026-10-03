@@ -13,8 +13,11 @@ import {
   ArrowUpRight,
   Gamepad2,
   RefreshCw,
+  Mail,
+  Cloud,
 } from 'lucide-react';
 import { StorageService } from '../services/storage';
+import { FirebaseService } from '../services/firebase';
 import { ScoreEntry, MatchRecord, AnalyticsSummary } from '../types/game';
 
 interface AdminDashboardProps {
@@ -27,7 +30,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToGame }) 
   const [adminPassword, setAdminPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'resumen' | 'ranking' | 'historial' | 'visitas' | 'jugadores' | 'analitica'>('resumen');
+  const [activeTab, setActiveTab] = useState<'resumen' | 'ranking' | 'historial' | 'visitas' | 'jugadores' | 'analitica' | 'mensajes'>('resumen');
 
   const [analytics, setAnalytics] = useState<AnalyticsSummary>({
     totalVisits: 0,
@@ -44,6 +47,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToGame }) 
   const [topScores, setTopScores] = useState<ScoreEntry[]>([]);
   const [matchHistory, setMatchHistory] = useState<MatchRecord[]>([]);
   const [playersList, setPlayersList] = useState<string[]>([]);
+  const [contactMessages, setContactMessages] = useState<Array<{ id: string; name: string; email: string; message: string; timestamp: number }>>([]);
 
   useEffect(() => {
     // Check session auth
@@ -59,6 +63,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToGame }) 
     setTopScores(StorageService.getTop50());
     setMatchHistory(StorageService.getMatchHistory());
     setPlayersList(StorageService.getUniquePlayers());
+
+    // Cloud sync with Firebase Firestore
+    StorageService.fetchOnlineTop50().then(setTopScores).catch(() => {});
+    FirebaseService.getContactMessages().then(setContactMessages).catch(() => {});
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -152,22 +160,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToGame }) 
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Firebase Firestore Conectado</span>
+          </div>
+
           <button
             onClick={loadDashboardData}
-            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700"
+            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700 cursor-pointer"
             title="Actualizar Datos"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
           <button
             onClick={onBackToGame}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700"
+            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700 cursor-pointer"
           >
             Ir al Juego
           </button>
           <button
             onClick={handleLogout}
-            className="p-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-400 border border-rose-800/60 transition-all"
+            className="p-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-400 border border-rose-800/60 transition-all cursor-pointer"
             title="Cerrar Sesión"
           >
             <LogOut className="w-4 h-4" />
@@ -186,6 +200,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToGame }) 
             { id: 'visitas', label: 'Visitas', icon: Eye },
             { id: 'jugadores', label: 'Jugadores', icon: Users },
             { id: 'analitica', label: 'Analítica', icon: Target },
+            { id: 'mensajes', label: `Mensajes (${contactMessages.length})`, icon: Mail },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -441,12 +456,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToGame }) 
                 </div>
 
                 <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 space-y-3">
-                  <h3 className="font-bold text-sm text-emerald-300">Resumen de Estado</h3>
+                  <h3 className="font-bold text-sm text-emerald-300">Conexión a Firebase</h3>
                   <div className="text-xs text-slate-300 leading-relaxed">
-                    El sistema está funcionando correctamente. Los datos de ranking y visitas se actualizan en tiempo real con persistencia en almacenamiento local y Firebase.
+                    Base de datos Firestore sincronizada en tiempo real. Todas las puntuaciones del Top 50, visitas y mensajes de contacto se almacenan en la nube de Google Cloud / Firebase.
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 7: MENSAJES DE CONTACTO */}
+          {activeTab === 'mensajes' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-black text-white">Buzón de Mensajes Firestore</h2>
+                  <p className="text-xs text-slate-400">Mensajes enviados por los jugadores desde el formulario de contacto</p>
+                </div>
+                <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-bold">
+                  {contactMessages.length} recibidos
+                </span>
+              </div>
+
+              {contactMessages.length === 0 ? (
+                <div className="bg-slate-900 p-12 rounded-3xl border border-slate-800 text-center text-slate-500 text-xs">
+                  No hay mensajes recibidos aún en la colección 'messages' de Firebase.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {contactMessages.map((msg) => (
+                    <div key={msg.id} className="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-sm">{msg.name}</span>
+                          <span className="text-slate-500 text-xs">•</span>
+                          <a href={`mailto:${msg.email}`} className="text-amber-400 text-xs hover:underline">
+                            {msg.email}
+                          </a>
+                        </div>
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(msg.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-200 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-850">
+                        {msg.message}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </main>

@@ -138,7 +138,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
       {/* Footer Note */}
       <div className="relative z-10 text-center py-0.5 text-[10px] font-semibold text-amber-300 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] tracking-wide shrink-0">
-        Dedicado a Violenty
+        Dedicado a Osiris
       </div>
     </div>
   );

@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Top 50 Scores Leaderboard
+    match /scores/{scoreId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['playerName', 'score', 'level'])
+                    && request.resource.data.playerName is string
+                    && request.resource.data.playerName.size() > 0
+                    && request.resource.data.playerName.size() <= 30
+                    && request.resource.data.score is number
+                    && request.resource.data.score >= 0
+                    && request.resource.data.level is number
+                    && request.resource.data.level >= 1;
+      allow update, delete: if false;
+    }
+
+    // Contact Messages
+    match /messages/{messageId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['name', 'email', 'message'])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 60
+                    && request.resource.data.email is string
+                    && request.resource.data.email.size() > 0
+                    && request.resource.data.email.size() <= 100
+                    && request.resource.data.message is string
+                    && request.resource.data.message.size() > 0
+                    && request.resource.data.message.size() <= 1500;
+      allow update, delete: if false;
+    }
+
+    // Analytics and Game Stats
+    match /analytics/{statDoc} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

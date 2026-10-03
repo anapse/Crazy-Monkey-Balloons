@@ -317,16 +317,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToGame }) 
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
-                      {topScores.map((score, index) => (
-                        <tr key={score.id || index} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="px-6 py-4 font-black text-amber-400">#{index + 1}</td>
-                          <td className="px-6 py-4 font-bold text-white">{score.playerName}</td>
-                          <td className="px-6 py-4 font-black text-emerald-400">{score.score.toLocaleString()}</td>
-                          <td className="px-6 py-4">Nivel {score.levelReached}</td>
-                          <td className="px-6 py-4">{score.balloonsPopped} 🎈</td>
-                          <td className="px-6 py-4 text-slate-500">{score.date}</td>
+                      {topScores.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                            No hay registros en el ranking aún. Las puntuaciones de partidas reales aparecerán aquí.
+                          </td>
                         </tr>
-                      ))}
+                      ) : (
+                        topScores.map((score, index) => (
+                          <tr key={score.id || index} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="px-6 py-4 font-black text-amber-400">#{index + 1}</td>
+                            <td className="px-6 py-4 font-bold text-white">{score.playerName}</td>
+                            <td className="px-6 py-4 font-black text-emerald-400">{score.score.toLocaleString()}</td>
+                            <td className="px-6 py-4">Nivel {score.levelReached}</td>
+                            <td className="px-6 py-4">{score.balloonsPopped} 🎈</td>
+                            <td className="px-6 py-4 text-slate-500">{score.date}</td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -418,17 +426,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToGame }) 
               <h2 className="text-xl font-black text-white">Jugadores Únicos ({playersList.length})</h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {playersList.map((player, idx) => (
-                  <div key={idx} className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-amber-400 font-bold text-sm">
-                      🐒
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm text-white">{player}</div>
-                      <div className="text-[10px] text-slate-400">Jugador Registrado</div>
-                    </div>
+                {playersList.length === 0 ? (
+                  <div className="col-span-full p-8 text-center bg-slate-900 rounded-3xl border border-slate-800 text-slate-500 text-xs">
+                    No hay jugadores únicos registrados aún.
                   </div>
-                ))}
+                ) : (
+                  playersList.map((player, idx) => (
+                    <div key={idx} className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-amber-400 font-bold text-sm">
+                        🐒
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-white">{player}</div>
+                        <div className="text-[10px] text-slate-400">Jugador Registrado</div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

@@ -11,26 +11,69 @@ const STORAGE_KEYS = {
   SOUND_ENABLED: 'cmb_sound_enabled',
 };
 
-// Initial default high scores for initial ranking if empty
-const DEFAULT_TOP_SCORES: ScoreEntry[] = [
-  { id: '1', playerName: 'BananoMaster', score: 28400, levelReached: 12, balloonsPopped: 184, date: '2026-10-01', timestamp: Date.now() - 86400000 * 2 },
-  { id: '2', playerName: 'BalloonSlayer', score: 24150, levelReached: 10, balloonsPopped: 152, date: '2026-10-01', timestamp: Date.now() - 86400000 * 2 },
-  { id: '3', playerName: 'CrazyCannon', score: 21900, levelReached: 9, balloonsPopped: 139, date: '2026-10-02', timestamp: Date.now() - 86400000 },
-  { id: '4', playerName: 'MonoPro', score: 19850, levelReached: 8, balloonsPopped: 120, date: '2026-10-02', timestamp: Date.now() - 86400000 },
-  { id: '5', playerName: 'ReboteRey', score: 17200, levelReached: 7, balloonsPopped: 105, date: '2026-10-02', timestamp: Date.now() - 43200000 },
-  { id: '6', playerName: 'Chimpazoom', score: 15400, levelReached: 6, balloonsPopped: 91, date: '2026-10-02', timestamp: Date.now() - 21600000 },
-  { id: '7', playerName: 'GigaBalloons', score: 13800, levelReached: 5, balloonsPopped: 80, date: '2026-10-02', timestamp: Date.now() - 10800000 },
-];
+// Known mock / placeholder player names to delete and prevent from appearing
+export const MOCK_PLAYER_NAMES = new Set([
+  'BananoMaster',
+  'BalloonSlayer',
+  'CrazyCannon',
+  'MonoPro',
+  'ReboteRey',
+  'Chimpazoom',
+  'GigaBalloons',
+]);
+
+export const isRealPlayer = (name?: string): boolean => {
+  if (!name) return false;
+  const trimmed = name.trim();
+  return trimmed.length > 0 && !MOCK_PLAYER_NAMES.has(trimmed);
+};
+
+// Initial default high scores are strictly empty (only real scores)
+const DEFAULT_TOP_SCORES: ScoreEntry[] = [];
 
 export class StorageService {
+  // Purge any residual mock/fake player data from local storage on launch
+  static purgeMockPlayers(): void {
+    try {
+      // 1. Clean Top Scores
+      const rawScores = localStorage.getItem(STORAGE_KEYS.TOP_SCORES);
+      if (rawScores) {
+        const scores: ScoreEntry[] = JSON.parse(rawScores);
+        const cleanScores = scores.filter((s) => isRealPlayer(s.playerName));
+        localStorage.setItem(STORAGE_KEYS.TOP_SCORES, JSON.stringify(cleanScores));
+      }
+
+      // 2. Clean Unique Players
+      const rawPlayers = localStorage.getItem('cmb_unique_players');
+      if (rawPlayers) {
+        const players: string[] = JSON.parse(rawPlayers);
+        const cleanPlayers = players.filter((p) => isRealPlayer(p));
+        localStorage.setItem('cmb_unique_players', JSON.stringify(cleanPlayers));
+      }
+
+      // 3. Clean Match History
+      const rawMatches = localStorage.getItem(STORAGE_KEYS.MATCH_HISTORY);
+      if (rawMatches) {
+        const matches: MatchRecord[] = JSON.parse(rawMatches);
+        const cleanMatches = matches.filter((m) => isRealPlayer(m.playerName));
+        localStorage.setItem(STORAGE_KEYS.MATCH_HISTORY, JSON.stringify(cleanMatches));
+      }
+    } catch {
+      // Ignore storage read/write errors
+    }
+  }
+
   // Player Name
   static getPlayerName(): string {
-    return localStorage.getItem(STORAGE_KEYS.PLAYER_NAME) || '';
+    const name = localStorage.getItem(STORAGE_KEYS.PLAYER_NAME) || '';
+    return isRealPlayer(name) ? name : '';
   }
 
   static setPlayerName(name: string): void {
-    localStorage.setItem(STORAGE_KEYS.PLAYER_NAME, name.trim());
-    this.registerPlayer(name.trim());
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    localStorage.setItem(STORAGE_KEYS.PLAYER_NAME, trimmed);
+    this.registerPlayer(trimmed);
   }
 
   // Sound setting
@@ -45,6 +88,7 @@ export class StorageService {
 
   // Track visit
   static trackVisit(): void {
+    this.purgeMockPlayers();
     const today = new Date().toISOString().split('T')[0];
     const visits = this.getVisitsData();
     visits.totalVisits = (visits.totalVisits || 0) + 1;
@@ -74,9 +118,11 @@ export class StorageService {
 
   // Register Unique Player
   static registerPlayer(playerName: string): void {
+    const trimmed = playerName.trim();
+    if (!isRealPlayer(trimmed)) return;
     const players = this.getUniquePlayers();
-    if (!players.includes(playerName)) {
-      players.push(playerName);
+    if (!players.includes(trimmed)) {
+      players.push(trimmed);
       localStorage.setItem('cmb_unique_players', JSON.stringify(players));
     }
   }
@@ -84,9 +130,11 @@ export class StorageService {
   static getUniquePlayers(): string[] {
     try {
       const raw = localStorage.getItem('cmb_unique_players');
-      return raw ? JSON.parse(raw) : ['BananoMaster', 'BalloonSlayer', 'CrazyCannon', 'MonoPro', 'ReboteRey'];
+      if (!raw) return [];
+      const players: string[] = JSON.parse(raw);
+      return players.filter((p) => isRealPlayer(p));
     } catch {
-      return ['BananoMaster', 'BalloonSlayer'];
+      return [];
     }
   }
 
@@ -112,36 +160,46 @@ export class StorageService {
     localStorage.setItem(STORAGE_KEYS.LOCAL_RECORD, JSON.stringify(updated));
   }
 
-  // Top 50 Leaderboard
+  // Top 50 Leaderboard (Only real players)
   static getTop50(): ScoreEntry[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.TOP_SCORES);
-      let scores: ScoreEntry[] = raw ? JSON.parse(raw) : DEFAULT_TOP_SCORES;
-      scores.sort((a, b) => b.score - a.score);
-      return scores.slice(0, 50);
+      if (!raw) return [];
+      const scores: ScoreEntry[] = JSON.parse(raw);
+      const cleanScores = scores.filter((s) => isRealPlayer(s.playerName));
+      cleanScores.sort((a, b) => b.score - a.score);
+      return cleanScores.slice(0, 50);
     } catch {
-      return DEFAULT_TOP_SCORES;
+      return [];
     }
   }
 
-  // Fetch online Top 50 from Firebase Firestore
+  // Fetch online Top 50 from Firebase Firestore (Only real players)
   static async fetchOnlineTop50(): Promise<ScoreEntry[]> {
     try {
       const onlineScores = await FirebaseService.getTopScores(50);
-      if (onlineScores && onlineScores.length > 0) {
-        // Merge with local scores
-        const localScores = this.getTop50();
-        const mergedMap = new Map<string, ScoreEntry>();
-        
-        localScores.forEach((s) => mergedMap.set(`${s.playerName}_${s.score}`, s));
-        onlineScores.forEach((s) => mergedMap.set(`${s.playerName}_${s.score}`, s));
-        
-        const merged = Array.from(mergedMap.values());
-        merged.sort((a, b) => b.score - a.score);
-        const top50 = merged.slice(0, 50);
-        localStorage.setItem(STORAGE_KEYS.TOP_SCORES, JSON.stringify(top50));
-        return top50;
-      }
+      const filteredOnline = onlineScores.filter((s) => isRealPlayer(s.playerName));
+
+      const localScores = this.getTop50();
+      const mergedMap = new Map<string, ScoreEntry>();
+
+      localScores.forEach((s) => {
+        if (isRealPlayer(s.playerName)) {
+          mergedMap.set(`${s.playerName}_${s.score}`, s);
+        }
+      });
+
+      filteredOnline.forEach((s) => {
+        if (isRealPlayer(s.playerName)) {
+          mergedMap.set(`${s.playerName}_${s.score}`, s);
+        }
+      });
+
+      const merged = Array.from(mergedMap.values());
+      merged.sort((a, b) => b.score - a.score);
+      const top50 = merged.slice(0, 50);
+      localStorage.setItem(STORAGE_KEYS.TOP_SCORES, JSON.stringify(top50));
+      return top50;
     } catch (e) {
       console.warn('Firebase getTopScores error, returning local cache:', e);
     }
@@ -149,10 +207,11 @@ export class StorageService {
   }
 
   static saveScore(playerName: string, score: number, levelReached: number, balloonsPopped: number): ScoreEntry[] {
+    const cleanName = isRealPlayer(playerName) ? playerName.trim() : 'Jugador';
     const scores = this.getTop50();
     const newEntry: ScoreEntry = {
       id: 'score_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-      playerName: playerName || 'Jugador Anónimo',
+      playerName: cleanName,
       score,
       levelReached,
       balloonsPopped,
@@ -166,6 +225,7 @@ export class StorageService {
 
     localStorage.setItem(STORAGE_KEYS.TOP_SCORES, JSON.stringify(top50));
     this.updateLocalRecord(score, levelReached, balloonsPopped);
+    this.registerPlayer(cleanName);
 
     // Persist score in Firebase Firestore
     FirebaseService.saveScore({
@@ -181,19 +241,22 @@ export class StorageService {
   // Match History
   static logMatch(match: Omit<MatchRecord, 'id' | 'date' | 'timestamp'>): void {
     try {
+      const cleanName = isRealPlayer(match.playerName) ? match.playerName.trim() : 'Jugador';
       const raw = localStorage.getItem(STORAGE_KEYS.MATCH_HISTORY);
       const history: MatchRecord[] = raw ? JSON.parse(raw) : [];
 
       const record: MatchRecord = {
         ...match,
+        playerName: cleanName,
         id: 'match_' + Date.now(),
         date: new Date().toISOString().split('T')[0],
         timestamp: Date.now(),
       };
 
-      history.unshift(record); // newest first
+      const cleanHistory = history.filter((m) => isRealPlayer(m.playerName));
+      cleanHistory.unshift(record); // newest first
       // Keep last 100 matches
-      localStorage.setItem(STORAGE_KEYS.MATCH_HISTORY, JSON.stringify(history.slice(0, 100)));
+      localStorage.setItem(STORAGE_KEYS.MATCH_HISTORY, JSON.stringify(cleanHistory.slice(0, 100)));
 
       // Update analytics
       this.updateAnalyticsOnMatch(record);
@@ -213,7 +276,8 @@ export class StorageService {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.MATCH_HISTORY);
       if (!raw) return [];
-      return JSON.parse(raw);
+      const history: MatchRecord[] = JSON.parse(raw);
+      return history.filter((m) => isRealPlayer(m.playerName));
     } catch {
       return [];
     }
@@ -272,3 +336,6 @@ export class StorageService {
     };
   }
 }
+
+// Automatically purge mock players immediately upon script load
+StorageService.purgeMockPlayers();

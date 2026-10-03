@@ -70,22 +70,34 @@ export class FirebaseService {
    */
   static async getTopScores(max: number = 50): Promise<ScoreEntry[]> {
     try {
-      const q = query(collection(db, 'scores'), orderBy('score', 'desc'), limit(max));
+      const mockNames = new Set([
+        'BananoMaster',
+        'BalloonSlayer',
+        'CrazyCannon',
+        'MonoPro',
+        'ReboteRey',
+        'Chimpazoom',
+        'GigaBalloons',
+      ]);
+      const q = query(collection(db, 'scores'), orderBy('score', 'desc'), limit(max * 2));
       const querySnapshot = await getDocs(q);
       const scores: ScoreEntry[] = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        scores.push({
-          id: docSnap.id,
-          playerName: data.playerName || 'Jugador',
-          score: Number(data.score) || 0,
-          levelReached: Number(data.level) || 1,
-          balloonsPopped: Number(data.balloonsPopped) || 0,
-          date: new Date(data.timestamp || Date.now()).toISOString().split('T')[0],
-          timestamp: data.timestamp || Date.now(),
-        });
+        const pName = (data.playerName || '').trim();
+        if (pName && !mockNames.has(pName)) {
+          scores.push({
+            id: docSnap.id,
+            playerName: pName,
+            score: Number(data.score) || 0,
+            levelReached: Number(data.level) || 1,
+            balloonsPopped: Number(data.balloonsPopped) || 0,
+            date: new Date(data.timestamp || Date.now()).toISOString().split('T')[0],
+            timestamp: data.timestamp || Date.now(),
+          });
+        }
       });
-      return scores;
+      return scores.slice(0, max);
     } catch (e) {
       console.warn('Could not fetch scores from Firestore, falling back to local:', e);
       return [];

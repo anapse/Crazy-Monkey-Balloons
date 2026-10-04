@@ -820,8 +820,8 @@ export class GameEngine {
       x,
       y,
       vy: 95, // Graceful visible descent
-      width: 52, // Large 52x48px box
-      height: 48,
+      width: 70, // Increased from 52
+      height: 65, // Increased from 48
       powerUp: chosen,
       isCollected: false,
     });
